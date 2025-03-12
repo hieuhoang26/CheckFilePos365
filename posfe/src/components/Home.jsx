@@ -5,17 +5,11 @@ import { checkApi } from "../api/check";
 
 export const Home = () => {
   // 20 row và 40 col
-  // const [data, setData] = useState(
-  //   Array.from({ length: 30 }, (_, rowIndex) =>
-  //     Array.from({ length: 40 }, (_, colIndex) => ({
-  //       value: "",
-  //     }))
-  //   )
-  // );
   const [data, setData] = useState(
-    Array.from({ length: 30 }, () =>
-      Array.from({ length: 40 }, () => ({
+    Array.from({ length: 30 }, (_, row) =>
+      Array.from({ length: 40 }, (_, col) => ({
         value: "",
+        color: row % 2 === 0 ? "#f0f0f0" : "#d1e7dd",
       }))
     )
   );
@@ -44,9 +38,6 @@ export const Home = () => {
       const newData = Array.from({ length: 30 }, () =>
         Array.from({ length: 40 }, () => ({
           value: "",
-          fontSize: "12px",
-          backgroundColor: "#ffffff",
-          color: "#000000",
         }))
       );
       headers.forEach((header, colIndex) => {
@@ -131,3 +122,18 @@ export const Home = () => {
     </div>
   );
 };
+
+// const CustomCell = ({ cell = {}, getValue, setValue }) => {
+//   return (
+//     <input
+//       className=" text-center border-none outline-none"
+//       style={{
+//         backgroundColor: cell.color || "white", // Kiểm tra `cell.color`
+//         color: "black",
+//         padding: "5px",
+//       }}
+//       // value={getValue() || ""}
+//       onChange={(e) => setValue(e.target.value)}
+//     />
+//   );
+// };
