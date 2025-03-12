@@ -4,6 +4,7 @@ import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Map;
 
 @Getter
 @Setter
@@ -19,4 +20,6 @@ public class ProductDto {
     private LocalDate expiryDate; // Hạn sử dụng
     private String unit;          // Đơn vị tính (ĐVT)
     private BigDecimal sellPrice; // Giá bán
+
+    private Map<String, Object> others;
 }
