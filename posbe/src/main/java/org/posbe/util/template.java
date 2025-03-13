@@ -7,4 +7,8 @@ public class template {
             "Mã hàng hóa", "Tên hàng hóa", "SL", "Đơn giá",
             "Số Lô", "Hạn sử dụng", "ĐVT", "Giá bán"
     );
+//    public static final List<String> REQUIRED_COLUMNS = List.of(
+//            "Mã hàng hóa", "Tên hàng hóa", "SL", "Đơn giá",
+//            "Số Lô", "ĐVT", "Giá bán"
+//    );
 }

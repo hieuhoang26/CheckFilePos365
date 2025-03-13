@@ -10,6 +10,8 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -136,12 +138,44 @@ public class ExcelService {
     }
 
     // Chuyển đổi ngày từ Excel sang LocalDate
+//    private LocalDate parseDateCell(Cell cell, int rowIndex) {
+//        if (cell == null || cell.getCellType() != CellType.NUMERIC) {
+//            throw new IllegalArgumentException("Lỗi dòng " + (rowIndex + 1)  + ": Hạn sử dụng không hợp lệ.");
+//        }
+//        return cell.getLocalDateTimeCellValue().toLocalDate();
+//    }
     private LocalDate parseDateCell(Cell cell, int rowIndex) {
-        if (cell == null || cell.getCellType() != CellType.NUMERIC) {
-            throw new IllegalArgumentException("Lỗi dòng " + (rowIndex + 1)  + ": Hạn sử dụng không hợp lệ.");
+        if (cell == null) {
+            throw new IllegalArgumentException("Lỗi dòng " + (rowIndex + 1) + ": Hạn sử dụng không hợp lệ.");
         }
-        return cell.getLocalDateTimeCellValue().toLocalDate();
+
+        if (cell.getCellType() == CellType.NUMERIC) {
+            return cell.getLocalDateTimeCellValue().toLocalDate();
+        } else if (cell.getCellType() == CellType.STRING) {
+            String dateString = cell.getStringCellValue().trim();
+
+            // Danh sách các định dạng ngày hỗ trợ
+            List<DateTimeFormatter> formatters = List.of(
+                    DateTimeFormatter.ofPattern("yyyy-MM-dd"),
+                    DateTimeFormatter.ofPattern("dd/MM/yyyy"),
+                    DateTimeFormatter.ofPattern("MM/dd/yyyy"),
+                    DateTimeFormatter.ofPattern("dd-MM-yyyy"),
+                    DateTimeFormatter.ofPattern("yyyy/MM/dd")
+            );
+
+            for (DateTimeFormatter formatter : formatters) {
+                try {
+                    return LocalDate.parse(dateString, formatter);
+                } catch (DateTimeParseException e) {
+                    // Bỏ qua lỗi, thử định dạng tiếp theo
+                }
+            }
+        }
+
+        throw new IllegalArgumentException("Lỗi dòng " + (rowIndex + 1) + ": Định dạng ngày không hợp lệ.");
     }
+
+
 
     private String normalizeHeader(Cell cell) {
         if (cell == null || cell.getCellType() != CellType.STRING) return "";
@@ -164,9 +198,9 @@ public class ExcelService {
         if (product.getSellPrice().compareTo(product.getUnitPrice()) < 0) {
             throw new IllegalArgumentException("Lỗi dòng " + (rowIndex+1) + ": Giá bán phải lớn hơn đơn giá.");
         }
-        if (product.getExpiryDate().isBefore(LocalDate.now())) {
-            throw new IllegalArgumentException("Lỗi dòng " + (rowIndex+1) + ": Hạn sử dụng phải lớn hơn ngày hiện tại.");
-        }
+//        if (product.getExpiryDate().isBefore(LocalDate.now())) {
+//            throw new IllegalArgumentException("Lỗi dòng " + (rowIndex+1) + ": Hạn sử dụng phải lớn hơn ngày hiện tại.");
+//        }
     }
 
 

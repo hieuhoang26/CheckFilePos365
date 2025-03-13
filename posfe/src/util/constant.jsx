@@ -7,4 +7,5 @@ export const DEFAULT_HEADERS = [
   "Hạn sử dụng (12/24/2050)",
   "ĐVT",
   "Giá bán",
+  "Ngày",
 ];

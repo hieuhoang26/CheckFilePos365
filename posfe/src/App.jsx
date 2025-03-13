@@ -5,12 +5,18 @@ import "./App.css";
 
 import { Test } from "./components/Test";
 import { ToastContainer } from "react-toastify";
+import { ProductList } from "./components/ProductList";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom"; // Đã thêm import
+import SimpleAutoSuggest from "./components/SuggestProduct";
 
 function App() {
   return (
-    <>
-      {/* <Home /> */}
-      <Test />
+    <Router>
+      <Routes>
+        <Route path="/" element={<Test />} />
+        <Route path="/product" element={<ProductList />} />
+        <Route path="/test" element={<SimpleAutoSuggest />} />
+      </Routes>
       <ToastContainer
         position="bottom-right"
         autoClose={5000}
@@ -23,7 +29,7 @@ function App() {
         pauseOnHover
         theme="colored"
       />
-    </>
+    </Router>
   );
 }
 

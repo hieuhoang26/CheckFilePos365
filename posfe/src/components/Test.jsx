@@ -7,21 +7,30 @@ import "handsontable/styles/handsontable.css";
 import "handsontable/styles/ht-theme-main.css";
 import "./Test.css";
 import { DEFAULT_HEADERS } from "../util/constant";
-import { handleExportWithTemplate } from "./ExportExcel";
 import { ExportModal } from "./ExportModal";
 import { toast } from "react-toastify";
+import { ProductList } from "./ProductList";
+import { useNavigate } from "react-router-dom";
+import AutoSuggestExample from "./SuggestProduct";
 
 registerAllModules();
 
 export const Test = () => {
+  const nagivate = useNavigate();
   const hotRef = useRef(null);
-  const [data, setData] = useState(
-    Array.from({ length: 9 }, () => Array(9).fill(""))
-  );
+  const [data, setData] = useState(() => {
+    const initialData = Array.from({ length: 10 }, () => Array(10).fill(""));
+    initialData[0] = DEFAULT_HEADERS.concat(
+      Array(10 - DEFAULT_HEADERS.length).fill("")
+    );
+    return initialData;
+  });
   const [headers, setHeaders] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [highlightedRows, setHighlightedRows] = useState(new Set());
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isOpenProduct, setIsOpenProduct] = useState(false);
+  const closeModal = () => setIsOpenProduct(!isOpenProduct);
 
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
@@ -71,6 +80,41 @@ export const Test = () => {
     }
   };
 
+  // chọn suggestt
+  const handleProductSelect = (product) => {
+    console.log("ID sản phẩm được chọn:", product);
+
+    setData((prevData) => {
+      // Clone mảng để tránh cập nhật trực tiếp
+      const newData = prevData.map((row) => [...row]);
+
+      // Tìm dòng trống đầu tiên
+      const emptyRowIndex = newData.findIndex((row) =>
+        row.every((cell) => cell === "")
+      );
+
+      if (emptyRowIndex !== -1) {
+        // Nếu có dòng trống, chèn dữ liệu vào dòng đó
+        newData[emptyRowIndex][0] = generateItemCode();
+        newData[emptyRowIndex][1] = product.name;
+        newData[emptyRowIndex][3] = product.unitPrice;
+        newData[emptyRowIndex][6] = product.unit;
+        newData[emptyRowIndex][7] = product.salePrice;
+      } else {
+        // Nếu không có dòng trống, thêm dòng mới
+        const newRow = Array(10).fill(""); // Tạo một dòng mới
+        newRow[0] = generateItemCode();
+        newRow[1] = product.name;
+        newData[emptyRowIndex][3] = product.unitPrice;
+        newData[emptyRowIndex][6] = product.unit;
+        newData[emptyRowIndex][7] = product.salePrice;
+        newData.push(newRow);
+      }
+
+      return newData;
+    });
+  };
+
   const formPos365 = () => {
     const newData = Array.from({ length: 10 }, () => Array(10).fill(""));
     newData[0] = DEFAULT_HEADERS.concat(Array(10 - headers.length).fill("")); // Đảm bảo độ dài hàng là 20
@@ -107,6 +151,7 @@ export const Test = () => {
     XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
     XLSX.writeFile(workbook, "spreadsheet_data.xlsx");
   };
+  // Xuất dữ liệu từ bảng tính ra file Excel với tuỳ chọn file
   const handleExportDemo = (selectedColumns) => {
     const columnIndexes = selectedColumns.map((col) => data[0].indexOf(col));
     const filteredData = data.map((row) =>
@@ -130,6 +175,29 @@ export const Test = () => {
     if (!hotInstance) return;
 
     hotInstance.alter("insert_col_end", hotInstance.countCols());
+  };
+
+  // tự động chèn mã hàng
+  const handleAfterChange = (changes, source) => {
+    if (!changes || source === "loadData") return;
+
+    const newData = [...data];
+
+    changes.forEach(([row, col, oldValue, newValue]) => {
+      if (newValue && col !== 0 && !newData[row][0]) {
+        newData[row][0] = generateItemCode(); // Gán mã hàng hóa nếu cột 0 đang trống
+      }
+      // tự động thêm row khi hết
+      if (row === newData.length - 1 && newValue !== "") {
+        newData.push(Array(newData[0].length).fill("")); // Thêm hàng mới rỗng
+      }
+    });
+
+    setData(newData);
+  };
+
+  const generateItemCode = () => {
+    return `MH-${Date.now().toString().slice(-6)}`; // Sinh mã hàng hóa dựa trên timestamp
   };
 
   return (
@@ -157,6 +225,7 @@ export const Test = () => {
             >
               Thêm Cột
             </button>
+            <AutoSuggestExample onProductSelect={handleProductSelect} />
           </div>
 
           <div className="flex gap-2">
@@ -168,10 +237,18 @@ export const Test = () => {
               Xuất File
             </button>
             <button
-              onClick={() => setIsModalOpen(true)}
+              onClick={() => setIsModalOpen(!isModalOpen)}
               className="bg-blue-500 text-white p-2 rounded"
             >
               Tuỳ chọn
+            </button>
+            <button
+              onClick={() => {
+                nagivate("/product");
+              }}
+              className="bg-blue-500 text-white p-2 rounded"
+            >
+              Danh Sách Hàng
             </button>
 
             {/* Button Tải file mẫu */}
@@ -207,12 +284,12 @@ export const Test = () => {
           ref={hotRef}
           data={data}
           rowHeaders={true}
-          colHeaders={true}
+          // colHeaders={true}
           width="100%"
           height="auto"
           autoWrapRow={true}
           autoWrapCol={true}
-          colWidths={120}
+          // colWidths={120}
           manualColumnResize={true}
           search={true}
           manualRowResize={true}
@@ -220,6 +297,7 @@ export const Test = () => {
           contextMenu={contextMenuSettings}
           className="custom-table"
           beforeChange={handleBeforeChange}
+          afterChange={handleAfterChange}
           cells={(row, col) => {
             const cellProperties = {};
             if (row === 0) {
@@ -229,54 +307,54 @@ export const Test = () => {
               cellProperties.className = "highlight-search";
             }
             // Validation cho cột bắt buộc (cột 0, 1, 6)
-            if ([0, 1, 6].includes(col)) {
-              cellProperties.validator = function (value, callback) {
-                if (!value || value.trim() === "") {
-                  callback(false); // Không hợp lệ
-                } else {
-                  callback(true); // Hợp lệ
-                }
-              };
-            }
-            // Validation cho Số lượng (SL) - cột 2
-            if (col === 2) {
-              cellProperties.validator = function (value, callback) {
-                const numericValue = Number(value);
-                if (isNaN(numericValue)) {
-                  callback(false); // Không phải số
-                } else if (!Number.isInteger(numericValue)) {
-                  callback(false); // Không phải số nguyên
-                } else if (numericValue <= 0) {
-                  callback(false); // Không phải số nguyên dương
-                } else {
-                  callback(true); // Hợp lệ
-                }
-              };
-            }
-            // Validation cho Đơn giá & Giá bán - cột 3, 7
-            if ([3, 7].includes(col)) {
-              cellProperties.validator = function (value, callback) {
-                const numericValue = Number(value);
-                if (isNaN(numericValue)) {
-                  callback(false); // Không phải số
-                } else if (numericValue <= 0) {
-                  callback(false); // Không phải số dương
-                } else {
-                  callback(true); // Hợp lệ
-                }
-              };
-            }
-            // Validation cho Hạn sử dụng - cột 5
-            if (col === 5) {
-              cellProperties.validator = function (value, callback) {
-                const regex = /^\d{2}\/\d{2}\/\d{4}$/; // Định dạng MM/DD/YYYY
-                if (!regex.test(value)) {
-                  callback(false); // Không hợp lệ
-                } else {
-                  callback(true); // Hợp lệ
-                }
-              };
-            }
+            // if ([1, 6].includes(col)) {
+            //   cellProperties.validator = function (value, callback) {
+            //     if (!value || value.trim() === "") {
+            //       callback(false); // Không hợp lệ
+            //     } else {
+            //       callback(true); // Hợp lệ
+            //     }
+            //   };
+            // }
+            // // Validation cho Số lượng (SL) - cột 2
+            // if (col === 2) {
+            //   cellProperties.validator = function (value, callback) {
+            //     const numericValue = Number(value);
+            //     if (isNaN(numericValue)) {
+            //       callback(false); // Không phải số
+            //     } else if (!Number.isInteger(numericValue)) {
+            //       callback(false); // Không phải số nguyên
+            //     } else if (numericValue <= 0) {
+            //       callback(false); // Không phải số nguyên dương
+            //     } else {
+            //       callback(true); // Hợp lệ
+            //     }
+            //   };
+            // }
+            // // Validation cho Đơn giá & Giá bán - cột 3, 7
+            // if ([3, 7].includes(col)) {
+            //   cellProperties.validator = function (value, callback) {
+            //     const numericValue = Number(value);
+            //     if (isNaN(numericValue)) {
+            //       callback(false); // Không phải số
+            //     } else if (numericValue <= 0) {
+            //       callback(false); // Không phải số dương
+            //     } else {
+            //       callback(true); // Hợp lệ
+            //     }
+            //   };
+            // }
+            // // Validation cho Hạn sử dụng - cột 5
+            // if (col === 5) {
+            //   cellProperties.validator = function (value, callback) {
+            //     const regex = /^\d{2}\/\d{2}\/\d{4}$/; // Định dạng MM/DD/YYYY
+            //     if (!regex.test(value)) {
+            //       callback(false); // Không hợp lệ
+            //     } else {
+            //       callback(true); // Hợp lệ
+            //     }
+            //   };
+            // }
 
             return cellProperties;
           }}
@@ -299,6 +377,9 @@ export const Test = () => {
           onExport={handleExportDemo}
           onClose={() => setIsModalOpen(false)}
         />
+      )}
+      {isOpenProduct && (
+        <ProductList isOpen={isOpenProduct} onClose={closeModal} />
       )}
     </div>
   );
