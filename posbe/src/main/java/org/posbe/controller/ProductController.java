@@ -1,6 +1,7 @@
 package org.posbe.controller;
 
 import lombok.RequiredArgsConstructor;
+import org.posbe.dto.PageResponse;
 import org.posbe.model.Product;
 import org.posbe.service.ProductService;
 import org.springframework.data.domain.Page;
@@ -18,12 +19,12 @@ public class ProductController {
     final ProductService productService;
 
     @GetMapping
-    public ResponseEntity<Page<Product>> getAllProducts(
+    public ResponseEntity<PageResponse> getAllProducts(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
-        return ResponseEntity.ok(productService.getAllProducts(pageable));
+        PageResponse response = productService.getAllProducts(page, size);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{id}")
