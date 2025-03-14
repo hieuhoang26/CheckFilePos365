@@ -1,6 +1,8 @@
 import axios from "axios";
 
-const baseUrl = "http://localhost:8080/api/";
+// const baseUrl = "http://localhost:8080/api/";
+const baseUrl = import.meta.env.VITE_BASE_URL;
+
 class Http {
   constructor() {
     this.instance = axios.create({
