@@ -33,16 +33,10 @@ public class ExcelService {
             Map<String, Integer> columnIndexMap = new HashMap<>();
             for (Cell cell : headerRow) {
                 String cleanedColumn = cell.getStringCellValue().replaceAll("\\(.*\\)", "").trim();
-//                columnIndexMap.put(cell.getStringCellValue().trim(), cell.getColumnIndex());
                 columnIndexMap.put(cleanedColumn, cell.getColumnIndex());
                 headerNames.add(cleanedColumn);
             }
             // Kiểm tra file có đủ cột bắt buộc không
-//            for (String required : REQUIRED_COLUMNS) {
-//                if (!columnIndexMap.containsKey(required)) {
-//                    throw new IllegalArgumentException("Thiếu cột mặc định: " + required);
-//                }
-//            }
             for (String required : REQUIRED_COLUMNS) {
                 boolean found = false;
                 for (String column : columnIndexMap.keySet()) {
@@ -57,21 +51,38 @@ public class ExcelService {
                     throw new IllegalArgumentException("Thiếu cột mặc định: " + required);
                 }
             }
-//            if (!isValidHeader(headerRow)) {
-//                throw new IllegalArgumentException("Cấu trúc file không hợp lệ! Vui lòng kiểm tra lại.");
-//            }
-
             // Đọc dữ liệu từ hàng thứ 2 trở đi
             for (int i = 1; i <= sheet.getLastRowNum(); i++) {
                 Row row = sheet.getRow(i);
-                if (row == null) continue;
-
+                if (row == null || isRowEmpty(row)) continue; // Bỏ qua hàng trống
                 ProductDto product = mapRowToProduct(row, i);
                 productList.add(product);
             }
+
         }
         return productList;
     }
+    private boolean isRowEmpty(Row row) {
+        if (row == null) return true; // Nếu hàng null thì chắc chắn trống
+
+        for (int i = row.getFirstCellNum(); i < row.getLastCellNum(); i++) {
+            Cell cell = row.getCell(i, Row.MissingCellPolicy.RETURN_BLANK_AS_NULL);
+
+            if (cell != null) {
+                if (cell.getCellType() == CellType.STRING && !cell.getStringCellValue().trim().isEmpty()) {
+                    return false; // Có chuỗi không rỗng -> không phải hàng trống
+                } else if (cell.getCellType() == CellType.NUMERIC) {
+                    return false; // Có số -> không phải hàng trống
+                } else if (cell.getCellType() == CellType.BOOLEAN) {
+                    return false; // Có giá trị true/false -> không phải hàng trống
+                }
+            }
+        }
+        return true; // Nếu duyệt hết vẫn không thấy ô nào có giá trị, hàng trống
+    }
+
+
+
     private ProductDto mapRowToProduct(Row row, int rowIndex) {
         ProductDto product = new ProductDto();
 
@@ -87,8 +98,9 @@ public class ExcelService {
         Map<String, Object> extraFields = new HashMap<>();
         for (int colIndex = 0; colIndex < row.getLastCellNum(); colIndex++) {
             if (colIndex >= headerNames.size()) continue; // Bỏ qua cột không có tiêu đề
-            String columnName = headerNames.get(colIndex);
-            if (!REQUIRED_COLUMNS.contains(columnName)) {
+
+            String columnName = headerNames.get(colIndex).trim();
+            if (!columnName.isEmpty() && !REQUIRED_COLUMNS.contains(columnName)) {
                 extraFields.put(columnName, getCellValue(row.getCell(colIndex)));
             }
         }
@@ -121,7 +133,7 @@ public class ExcelService {
     // Lấy giá trị số từ ô Excel
     private double getNumericCellValue(Cell cell, int rowIndex, String columnName) {
         if (cell == null) {
-            throw new IllegalArgumentException("Lỗi ở dòng " + (rowIndex + 1)  + ": " + columnName + " không được để trống.");
+            throw new IllegalArgumentException("Lỗi ở dòng " + (rowIndex )  + ": " + columnName + " không được để trống.");
         }
 
         if (cell.getCellType() == CellType.NUMERIC) {
@@ -130,10 +142,10 @@ public class ExcelService {
             try {
                 return Double.parseDouble(cell.getStringCellValue().trim());
             } catch (NumberFormatException e) {
-                throw new IllegalArgumentException("Lỗi ở dòng " + (rowIndex + 1)  + ": " + columnName + " phải là số hợp lệ.");
+                throw new IllegalArgumentException("Lỗi ở dòng " + (rowIndex )  + ": " + columnName + " phải là số hợp lệ.");
             }
         } else {
-            throw new IllegalArgumentException("Lỗi ở dòng " + (rowIndex + 1)  + ": " + columnName + " có dữ liệu không hợp lệ.");
+            throw new IllegalArgumentException("Lỗi ở dòng " + (rowIndex )  + ": " + columnName + " có dữ liệu không hợp lệ.");
         }
     }
 
@@ -153,7 +165,9 @@ public class ExcelService {
             return cell.getLocalDateTimeCellValue().toLocalDate();
         } else if (cell.getCellType() == CellType.STRING) {
             String dateString = cell.getStringCellValue().trim();
-
+            if (dateString.isEmpty()) {
+                return null; // Trả về null nếu ô chứa chuỗi rỗng
+            }
             // Danh sách các định dạng ngày hỗ trợ
             List<DateTimeFormatter> formatters = List.of(
                     DateTimeFormatter.ofPattern("yyyy-MM-dd"),
@@ -177,10 +191,6 @@ public class ExcelService {
 
 
 
-    private String normalizeHeader(Cell cell) {
-        if (cell == null || cell.getCellType() != CellType.STRING) return "";
-        return cell.getStringCellValue().trim().replaceAll("\\s+", " ");
-    }
 
     private void validateProduct(ProductDto product, int rowIndex) {
         if (product.getSku().isEmpty()) {
