@@ -160,7 +160,7 @@ export const Test = () => {
     const worksheet = XLSX.utils.aoa_to_sheet(jsonData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
-    XLSX.writeFile(workbook, "spreadsheet_data.xlsx");
+    XLSX.writeFile(workbook, "pos365.xlsx");
   };
   // Xuất dữ liệu từ bảng tính ra file Excel với tuỳ chọn file
   const handleExportDemo = (selectedColumns) => {
@@ -171,7 +171,7 @@ export const Test = () => {
     const worksheet = XLSX.utils.aoa_to_sheet(filteredData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
-    XLSX.writeFile(workbook, "filtered_data.xlsx");
+    XLSX.writeFile(workbook, "pos365.xlsx");
   };
 
   const addRow = () => {
