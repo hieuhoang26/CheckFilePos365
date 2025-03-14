@@ -22,8 +22,8 @@ const AutoSuggestExample = ({ onProductSelect }) => {
       try {
         const response = await productApi.getAll(0, 100);
 
-        setProducts(response?.data?.content);
-        console.log(response?.data?.content);
+        setProducts(response?.data?.items);
+        console.log(response?.data?.items);
       } catch (error) {
         console.error("Lỗi khi lấy danh sách sản phẩm:", error);
       }

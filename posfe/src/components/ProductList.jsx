@@ -9,8 +9,10 @@ import { FixedSizeList as List } from "react-window";
 import { useInView } from "react-intersection-observer";
 import { productApi } from "../api/product";
 import { MdClose } from "react-icons/md";
+import { useNavigate } from "react-router-dom";
 
 export const ProductList = () => {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [name, setName] = useState("");
   const [unitPrice, setUnitPrice] = useState("");
@@ -24,10 +26,17 @@ export const ProductList = () => {
       queryKey: ["products"],
       queryFn: async ({ pageParam = 0 }) => {
         const response = await productApi.getAll(pageParam, 5);
+        console.log(response.data.items);
         return response.data;
       },
-      getNextPageParam: (lastPage, pages) =>
-        lastPage.last ? undefined : pages.length,
+      // getNextPageParam: (lastPage, pages) =>
+      //   lastPage.last ? undefined : pages.length,
+      getNextPageParam: (lastPage) => {
+        const { page, size, total } = lastPage;
+        const totalPages = Math.ceil(total / size);
+        console.log(page);
+        return page + 1 < totalPages ? page + 1 : undefined;
+      },
     });
 
   // Xử lý lưu/cập nhật sản phẩm
@@ -131,7 +140,8 @@ export const ProductList = () => {
   };
 
   // Tổng số sản phẩm đã tải
-  const products = data?.pages.flatMap((page) => page.content) || [];
+  // const products = data?.pages.flatMap((page) => page.items) || [];
+  const products = data?.pages.flatMap((page) => page.items) || [];
   return (
     <div
       className="max-w-xl mx-auto p-5 rounded-lg shadow-2xl bg-white my-5"
@@ -141,6 +151,12 @@ export const ProductList = () => {
         <h2 className="text-lg font-semibold text-gray-800">
           Danh sách hàng hoá
         </h2>
+        <button
+          onClick={() => navigate("/")}
+          className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition"
+        >
+          Back
+        </button>
       </div>
 
       {/* Form nhập sản phẩm */}

@@ -44,8 +44,14 @@ export const Test = () => {
       let headers = [...DEFAULT_HEADERS];
 
       // Thêm các trường mới từ 'others' vào tiêu đề
+      // if (jsonData.length > 0 && jsonData[0].others) {
+      //   const otherFields = Object.keys(jsonData[0].others);
+      //   headers = [...headers, ...otherFields];
+      // }
       if (jsonData.length > 0 && jsonData[0].others) {
-        const otherFields = Object.keys(jsonData[0].others);
+        const otherFields = Object.keys(jsonData[0].others).filter(
+          (key) => key !== "Ngày" && !headers.includes(key) // Tránh trùng lặp
+        );
         headers = [...headers, ...otherFields];
       }
       // Chuyển đổi JSON thành mảng 2D
@@ -61,12 +67,15 @@ export const Test = () => {
             item.expiryDate || "",
             item.unit || "",
             item.unitPrice || "",
+            item.others?.["Ngày"] || getCurrDay(),
           ];
 
           // Thêm các trường mới từ 'others' vào dữ liệu
           if (item.others) {
-            const otherValues = Object.values(item.others);
-            return [...baseData, ...otherValues];
+            const otherValues = Object.entries(item.others)
+              .filter(([key]) => key !== "Ngày" && key !== "") // Lọc bỏ "Ngày"
+              .map(([, value]) => value);
+            return [...baseData, ...otherValues]; // Chỉ thêm các giá trị còn lại
           }
 
           return baseData;
@@ -100,6 +109,7 @@ export const Test = () => {
         newData[emptyRowIndex][3] = product.unitPrice;
         newData[emptyRowIndex][6] = product.unit;
         newData[emptyRowIndex][7] = product.salePrice;
+        newData[emptyRowIndex][8] = getCurrDay();
       } else {
         // Nếu không có dòng trống, thêm dòng mới
         const newRow = Array(10).fill(""); // Tạo một dòng mới
@@ -108,6 +118,7 @@ export const Test = () => {
         newData[emptyRowIndex][3] = product.unitPrice;
         newData[emptyRowIndex][6] = product.unit;
         newData[emptyRowIndex][7] = product.salePrice;
+        newData[emptyRowIndex][8] = getCurrDay();
         newData.push(newRow);
       }
 
@@ -138,9 +149,9 @@ export const Test = () => {
       hotInstance.render(); // Cập nhật bảng sau khi tìm kiếm
     }
   };
-  const handleReset = () => {
-    setData(Array.from({ length: 10 }, () => Array(10).fill("")));
-  };
+  // const handleReset = () => {
+  //   setData(Array.from({ length: 10 }, () => Array(10).fill("")));
+  // };
   // Xuất dữ liệu từ bảng tính ra file Excel
   const handleExport = () => {
     // const jsonData = data.map((row) => row.map((cell) => cell.value || ""));
@@ -187,6 +198,10 @@ export const Test = () => {
       if (newValue && col !== 0 && !newData[row][0]) {
         newData[row][0] = generateItemCode(); // Gán mã hàng hóa nếu cột 0 đang trống
       }
+      if (newValue && col !== 0 && !newData[row][8]) {
+        newData[row][8] = getCurrDay(); // Gán ngày/tháng/năm hiện tại vào cột 8
+      }
+
       // tự động thêm row khi hết
       if (row === newData.length - 1 && newValue !== "") {
         newData.push(Array(newData[0].length).fill("")); // Thêm hàng mới rỗng
@@ -197,7 +212,25 @@ export const Test = () => {
   };
 
   const generateItemCode = () => {
-    return `MH-${Date.now().toString().slice(-6)}`; // Sinh mã hàng hóa dựa trên timestamp
+    const now = new Date();
+    const year = now.getFullYear().toString().slice(-2);
+    const month = String(now.getMonth() + 1).padStart(2, "0"); // Thêm số 0 nếu cần
+    const day = String(now.getDate()).padStart(2, "0");
+    const hour = String(now.getHours()).padStart(2, "0");
+    const minute = String(now.getMinutes()).padStart(2, "0");
+    const randomNum = Math.floor(1000 + Math.random() * 9000); // 4 số ngẫu nhiên
+    return `${year}${month}${day}${hour}${minute}${randomNum}`;
+  };
+  const getCurrDay = () => {
+    const currentDate = new Date();
+    const day = currentDate.getDate();
+    const month = currentDate.getMonth() + 1; // Tháng bắt đầu từ 0 nên cần +1
+    const year = currentDate.getFullYear();
+
+    // Định dạng ngày/tháng/năm theo ý muốn, ví dụ: "dd/mm/yyyy"
+    return `${day < 10 ? "0" + day : day}/${
+      month < 10 ? "0" + month : month
+    }/${year}`;
   };
 
   return (
@@ -236,12 +269,17 @@ export const Test = () => {
             >
               Xuất File
             </button>
-            <button
-              onClick={() => setIsModalOpen(!isModalOpen)}
-              className="bg-blue-500 text-white p-2 rounded"
-            >
-              Tuỳ chọn
-            </button>
+            {/* Button Mở file */}
+            <label className="px-4 py-2 bg-blue-500 text-white rounded-md cursor-pointer hover:bg-blue-600">
+              Mở file
+              <input
+                type="file"
+                accept=".xlsx, .xls"
+                className="hidden"
+                onChange={handleFileUpload}
+              />
+            </label>
+
             <button
               onClick={() => {
                 nagivate("/product");
@@ -259,22 +297,18 @@ export const Test = () => {
               Mẫu POS365
             </button>
 
-            {/* Button Mở file */}
-            <label className="px-4 py-2 bg-blue-500 text-white rounded-md cursor-pointer hover:bg-blue-600">
-              Mở file
-              <input
-                type="file"
-                accept=".xlsx, .xls"
-                className="hidden"
-                onChange={handleFileUpload}
-              />
-            </label>
             <button
+              onClick={() => setIsModalOpen(!isModalOpen)}
+              className="bg-blue-500 text-white p-2 rounded"
+            >
+              Tuỳ chọn
+            </button>
+            {/* <button
               onClick={handleReset}
               className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600"
             >
               Reset
-            </button>
+            </button> */}
           </div>
         </div>
       </div>
@@ -401,11 +435,21 @@ const contextMenuSettings = {
     row_below: {
       name: "Thêm hàng dưới ",
     },
-    col_left: {},
-    col_right: {},
-    clear_column: {},
-    remove_row: {},
-    remove_col: {},
+    col_left: {
+      name: "Thêm cột trái ",
+    },
+    col_right: {
+      name: "Thêm cột phải ",
+    },
+    clear_column: {
+      name: "Xoá dữ liệu cột ",
+    },
+    remove_row: {
+      name: "Xoá hàng ",
+    },
+    remove_col: {
+      name: "Xoá cột ",
+    },
   },
 };
 

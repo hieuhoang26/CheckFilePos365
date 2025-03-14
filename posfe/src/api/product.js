@@ -4,7 +4,7 @@ const URL = "product";
 
 export const productApi = {
   getAll(page, size) {
-    return http.get(`${URL}?page=${page}&size=${size}`, {});
+    return http.get(`${URL}?page=${page}&size=${size}`);
   },
   create(name, unitPrice, unit, salePrice) {
     return http.post(`${URL}`, {
